@@ -36,7 +36,7 @@ export default function LoginScreen({ onLogin }) {
       return;
     }
     setAviso(null);
-    onLogin();
+    onLogin(email.trim());
   };
 
   const esqueci = () => {

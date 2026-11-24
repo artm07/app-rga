@@ -6,12 +6,14 @@ const C = colors.navy;
 export function PawIcon({ size = 40, color = C }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 64 64">
-      <Ellipse cx="18" cy="16" rx="6.5" ry="8.5" fill={color} transform="rotate(-12 18 16)" />
-      <Ellipse cx="46" cy="16" rx="6.5" ry="8.5" fill={color} transform="rotate(12 46 16)" />
-      <Ellipse cx="7" cy="31" rx="5.5" ry="7.5" fill={color} transform="rotate(-25 7 31)" />
-      <Ellipse cx="57" cy="31" rx="5.5" ry="7.5" fill={color} transform="rotate(25 57 31)" />
+      {/* 4 dedinhos em arco */}
+      <Ellipse cx="11.5" cy="29" rx="5.6" ry="7" fill={color} transform="rotate(-28 11.5 29)" />
+      <Ellipse cx="23.5" cy="16.5" rx="6.2" ry="8" fill={color} transform="rotate(-10 23.5 16.5)" />
+      <Ellipse cx="40.5" cy="16.5" rx="6.2" ry="8" fill={color} transform="rotate(10 40.5 16.5)" />
+      <Ellipse cx="52.5" cy="29" rx="5.6" ry="7" fill={color} transform="rotate(28 52.5 29)" />
+      {/* almofada principal */}
       <Path
-        d="M32 28c-7 0-11 7-15 12-4 4.5-6 8-4 12 2.5 4.5 8 3 12 2.2 2.5-.5 4.5-.8 7-.8s4.5.3 7 .8c4 .8 9.5 2.3 12-2.2 2-4 0-7.5-4-12-4-5-8-12-15-12z"
+        d="M32 31c-5.2 0-8.6 3.6-11.4 8.2-2.6 4.2-6.6 6.9-6.6 11.6 0 4.6 3.6 7.7 8.2 7.7 3.9 0 6.6-1.9 9.8-1.9s5.9 1.9 9.8 1.9c4.6 0 8.2-3.1 8.2-7.7 0-4.7-4-7.4-6.6-11.6C40.6 34.6 37.2 31 32 31z"
         fill={color}
       />
     </Svg>
@@ -99,6 +101,51 @@ export function PinIcon({ size = 22, color = C }) {
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill={color} />
       <Circle cx="12" cy="9" r="2.6" fill={colors.white} />
+    </Svg>
+  );
+}
+
+export function PencilIcon({ size = 20, color = C }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+      <Path d="M13.5 6.5l4 4" stroke={color} strokeWidth="2" />
+    </Svg>
+  );
+}
+
+export function PlusIcon({ size = 20, color = C }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2.4" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function TrashIcon({ size = 18, color = C }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function CameraIcon({ size = 20, color = C }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 8.5A1.5 1.5 0 0 1 4.5 7h3l1.5-2.5h6L16.5 7h3A1.5 1.5 0 0 1 21 8.5v10a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="13" r="3.5" stroke={color} strokeWidth="2" />
     </Svg>
   );
 }

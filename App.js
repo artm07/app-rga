@@ -23,6 +23,7 @@ import {
   AjudaScreen,
 } from './src/screens/OtherScreens';
 import { colors } from './src/theme';
+import { StoreProvider, useStore } from './src/store';
 
 const SCREENS = {
   rga: RgaScreen,
@@ -34,6 +35,17 @@ const SCREENS = {
 };
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <StoreProvider>
+        <Main />
+      </StoreProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function Main() {
+  const { data, update } = useStore();
   const [fontsLoaded] = useFonts({
     Quicksand_600SemiBold,
     Quicksand_700Bold,
@@ -43,8 +55,8 @@ export default function App() {
     Poppins_700Bold,
     Poppins_700Bold_Italic,
   });
-  // 'login' | 'menu' | uma das chaves de SCREENS
-  const [screen, setScreen] = useState('login');
+  // 'menu' | uma das chaves de SCREENS (o login aparece enquanto não houver usuário)
+  const [screen, setScreen] = useState('menu');
 
   // Botão "voltar" do Android
   useEffect(() => {
@@ -58,25 +70,30 @@ export default function App() {
     return () => sub.remove();
   }, [screen]);
 
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: colors.pink }} />;
+  if (!fontsLoaded || !data) return <View style={{ flex: 1, backgroundColor: colors.pink }} />;
+
+  const login = (email) => {
+    update((d) => ({ ...d, user: { email } }));
+    setScreen('menu');
+  };
+  const logout = () => update((d) => ({ ...d, user: null }));
 
   let content;
-  if (screen === 'login') content = <LoginScreen onLogin={() => setScreen('menu')} />;
-  else if (screen === 'menu')
-    content = <MenuScreen onOpen={setScreen} onLogout={() => setScreen('login')} />;
+  if (!data.user) content = <LoginScreen onLogin={login} />;
+  else if (screen === 'menu') content = <MenuScreen onOpen={setScreen} onLogout={logout} />;
   else {
     const Screen = SCREENS[screen];
     content = <Screen onBack={() => setScreen('menu')} />;
   }
 
   return (
-    <SafeAreaProvider>
+    <>
       <StatusBar style="dark" />
       {/* No navegador: o app fica numa coluna vertical centralizada, como um celular */}
       <View style={styles.page}>
         <View style={styles.app}>{content}</View>
       </View>
-    </SafeAreaProvider>
+    </>
   );
 }
 

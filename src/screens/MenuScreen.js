@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView, Image, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Gradient from '../components/Gradient';
+import Mascot from '../components/Mascot';
+import { useStore } from '../store';
 import { PawIcon, ClipboardIcon, AlertIcon, LockIcon, HeartIcon, MenuIcon } from '../components/Icons';
 import { colors, fonts, shadow } from '../theme';
 
@@ -22,7 +24,7 @@ function MenuCard({ label, Icon, onPress }) {
       <View style={styles.iconCircle}>
         <Icon size={44} />
       </View>
-      <Text style={[styles.cardText, label.includes('\n') && { textAlign: 'center' }]}>{label}</Text>
+      <Text style={styles.cardText}>{label}</Text>
     </Pressable>
   );
 }
@@ -30,6 +32,8 @@ function MenuCard({ label, Icon, onPress }) {
 export default function MenuScreen({ onOpen, onLogout }) {
   const insets = useSafeAreaInsets();
   const [drawer, setDrawer] = useState(false);
+  const { data } = useStore();
+  const primeiroNome = (data.pet.tutor.nome || '').split(' ')[0];
 
   return (
     <View style={styles.root}>
@@ -50,9 +54,7 @@ export default function MenuScreen({ onOpen, onLogout }) {
         ))}
 
         <Pressable style={styles.help} onPress={() => onOpen('ajuda')}>
-          <View style={styles.mascotRing}>
-            <Image source={require('../../assets/mascote.jpg')} style={styles.mascot} />
-          </View>
+          <Mascot size={88} />
           <Text style={styles.helpText}>Posso ajudar?</Text>
         </Pressable>
       </ScrollView>
@@ -60,7 +62,9 @@ export default function MenuScreen({ onOpen, onLogout }) {
       {drawer && (
         <Pressable style={styles.overlay} onPress={() => setDrawer(false)}>
           <Pressable style={[styles.drawer, { paddingTop: insets.top + 24 }]} onPress={() => {}}>
-            <Text style={styles.drawerTitle}>Olá, Arthur!</Text>
+            <Text style={styles.drawerTitle}>{primeiroNome ? `Olá, ${primeiroNome}!` : 'Olá!'}</Text>
+            {data.user?.email ? <Text style={styles.drawerEmail}>{data.user.email}</Text> : null}
+            <View style={{ height: 18 }} />
             {ITEMS.map((it) => (
               <Pressable
                 key={it.key}
@@ -116,16 +120,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   help: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingLeft: 4 },
-  mascotRing: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 6,
-    borderColor: colors.mint,
-    overflow: 'hidden',
-    backgroundColor: colors.white,
-  },
-  mascot: { width: '100%', height: '100%' },
   helpText: { fontFamily: fonts.title, fontSize: 21, color: colors.navy, marginLeft: 6 },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(74,97,137,0.35)' },
   drawer: {
@@ -138,7 +132,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 8,
     borderRightColor: colors.mint,
   },
-  drawerTitle: { fontFamily: fonts.titleBold, fontSize: 22, color: colors.navy, marginBottom: 20 },
+  drawerTitle: { fontFamily: fonts.titleBold, fontSize: 22, color: colors.navy },
+  drawerEmail: { fontFamily: fonts.body, fontSize: 12, color: colors.navy, opacity: 0.8 },
   drawerItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   drawerText: { fontFamily: fonts.title, fontSize: 18, color: colors.navy, marginLeft: 12 },
 });

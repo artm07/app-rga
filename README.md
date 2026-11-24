@@ -9,7 +9,19 @@ App mobile (Android / iOS / Web) do **RGA – Registro Geral Animal**, feito em 
 - **RGA** – foto do pet, abas *RGA / Tutor / Localização / Vacinação* e a ficha (nº do registro, nome, tutor, espécie, sexo, castrado, idade, raça, pelagem, porte).
 - **Consultas, Notícias, Código de acesso, Adoção, Posso ajudar? (chat)** – telas no mesmo tema.
 
-Os dados são de exemplo e ficam em `src/data.js`; é ali que entra a integração com uma API.
+## O que dá para editar
+
+Tudo fica salvo no aparelho (no navegador, no próprio navegador) e continua lá ao fechar e abrir o app.
+
+- **RGA:** botão **Editar** muda os dados do pet, do tutor e do endereço; tocar na foto troca a imagem (galeria do celular ou arquivo no computador).
+- **Vacinação:** adicionar e remover vacinas.
+- **Consultas:** criar, remover e mudar a situação (Agendada → Realizada → Cancelada) tocando na etiqueta.
+- **Adoção:** divulgar um animal, remover e marcar "Quero adotar".
+- **Código de acesso:** copiar e gerar um novo.
+- **Posso ajudar?:** o chat responde perguntas sobre vacinas, consultas, código e adoção, e guarda o histórico.
+- O login fica lembrado até tocar em **Sair** no menu ☰.
+
+Os dados iniciais são de exemplo e ficam em `src/data.js`; o salvamento fica em `src/store.js`. É ali que entra a integração com uma API quando houver.
 
 ## Como rodar
 
@@ -35,9 +47,10 @@ Isso gera **`web/index.html`**: um arquivo único, com fontes e imagens embutida
 ```
 App.js                  navegação entre as telas + carregamento das fontes
 src/theme.js            cores, fontes e sombra do tema
-src/data.js             dados de exemplo
+src/data.js             dados iniciais e campos de cada aba
+src/store.js            estado do app salvo no aparelho
 src/components/         Logo, ícones (SVG), degradê, cabeçalho
 src/screens/            Login, Menu, RGA e demais telas
 scripts/single-html.js  junta o build web num único web/index.html
-assets/                 foto do pet e mascote
+assets/                 foto do pet e quadros da animação do mascote
 ```
