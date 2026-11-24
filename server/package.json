@@ -2,9 +2,9 @@
   "name": "rga-chat-server",
   "private": true,
   "type": "module",
-  "description": "Servidor do assistente \"Posso ajudar?\" do app RGA (guarda a chave da API do Claude)",
+  "description": "Servidor do app RGA: contas, área do administrador e assistente com IA",
   "scripts": {
-    "start": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON chat-server.mjs"
+    "start": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON server.mjs"
   },
   "engines": {
     "node": ">=22"

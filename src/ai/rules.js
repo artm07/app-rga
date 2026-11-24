@@ -1,5 +1,5 @@
 // Regras do assistente "Posso ajudar?". Usadas tanto no app (link publicado)
-// quanto no servidor (server/chat-server.mjs), para valer o mesmo comportamento.
+// quanto no servidor (server/server.mjs), para valer o mesmo comportamento.
 
 export const RULES = `Você é o Miau, o assistente virtual do app RGA (Registro Geral Animal), um gatinho simpático de headset.
 Você só conversa sobre CUIDADO DE ANIMAIS DE ESTIMAÇÃO e sobre o uso do app RGA.

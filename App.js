@@ -15,6 +15,7 @@ import { Poppins_700Bold_Italic } from '@expo-google-fonts/poppins/700Bold_Itali
 import LoginScreen from './src/screens/LoginScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import RgaScreen from './src/screens/RgaScreen';
+import AdminScreen from './src/screens/AdminScreen';
 import {
   ConsultasScreen,
   NoticiasScreen,
@@ -32,6 +33,7 @@ const SCREENS = {
   codigo: CodigoScreen,
   adocao: AdocaoScreen,
   ajuda: AjudaScreen,
+  admin: AdminScreen,
 };
 
 export default function App() {
@@ -45,7 +47,7 @@ export default function App() {
 }
 
 function Main() {
-  const { data, update } = useStore();
+  const { ready, session, data, logout, isAdmin } = useStore();
   const [fontsLoaded] = useFonts({
     Quicksand_600SemiBold,
     Quicksand_700Bold,
@@ -70,17 +72,12 @@ function Main() {
     return () => sub.remove();
   }, [screen]);
 
-  if (!fontsLoaded || !data) return <View style={{ flex: 1, backgroundColor: colors.pink }} />;
-
-  const login = (email) => {
-    update((d) => ({ ...d, user: { email } }));
-    setScreen('menu');
-  };
-  const logout = () => update((d) => ({ ...d, user: null }));
+  if (!fontsLoaded || !ready) return <View style={{ flex: 1, backgroundColor: colors.pink }} />;
 
   let content;
-  if (!data.user) content = <LoginScreen onLogin={login} />;
-  else if (screen === 'menu') content = <MenuScreen onOpen={setScreen} onLogout={logout} />;
+  if (!session || !data) content = <LoginScreen />;
+  else if (screen === 'menu' || (screen === 'admin' && !isAdmin))
+    content = <MenuScreen onOpen={setScreen} onLogout={() => (setScreen('menu'), logout())} />;
   else {
     const Screen = SCREENS[screen];
     content = <Screen onBack={() => setScreen('menu')} />;

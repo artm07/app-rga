@@ -7,10 +7,14 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Logo from '../components/Logo';
 import { colors, fonts, shadow } from '../theme';
+import { useStore } from '../store';
+import { validateSignup } from '../backend/shared';
+import { DEMO_ACCOUNT } from '../data';
 
 function Blobs() {
   return (
@@ -24,72 +28,126 @@ function Blobs() {
   );
 }
 
-export default function LoginScreen({ onLogin }) {
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  // Aviso mostrado na própria tela: { tipo: 'erro' | 'info', texto }
-  const [aviso, setAviso] = useState(null);
+function Field({ label, style, ...props }) {
+  return (
+    <View style={style}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput style={styles.input} placeholderTextColor="#8A90A6" {...props} />
+    </View>
+  );
+}
 
-  const entrar = () => {
-    if (!email.trim() || !senha) {
-      setAviso({ tipo: 'erro', texto: 'Preencha o login e a senha.' });
-      return;
+// Tela de entrada: "Log in" e "Criar conta" no mesmo visual do protótipo
+export default function LoginScreen() {
+  const { login, register, backend } = useStore();
+  const [modo, setModo] = useState('entrar'); // 'entrar' | 'criar'
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', confirma: '', petNome: '' });
+  const [aviso, setAviso] = useState(null); // { tipo: 'erro' | 'info', texto }
+  const [enviando, setEnviando] = useState(false);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const criando = modo === 'criar';
+
+  const trocarModo = () => {
+    setModo(criando ? 'entrar' : 'criar');
+    setAviso(null);
+  };
+
+  const enviar = async () => {
+    if (enviando) return;
+    if (!form.email.trim() || !form.senha) return setAviso({ tipo: 'erro', texto: 'Preencha o e-mail e a senha.' });
+    if (criando) {
+      const erro = validateSignup(form);
+      if (erro) return setAviso({ tipo: 'erro', texto: erro });
+      if (form.senha !== form.confirma) return setAviso({ tipo: 'erro', texto: 'As senhas não são iguais.' });
     }
     setAviso(null);
-    onLogin(email.trim());
+    setEnviando(true);
+    try {
+      if (criando) await register({ nome: form.nome, email: form.email, senha: form.senha, petNome: form.petNome });
+      else await login({ email: form.email, senha: form.senha });
+    } catch (e) {
+      setAviso({ tipo: 'erro', texto: e?.message || 'Não foi possível entrar. Tente de novo.' });
+      setEnviando(false);
+    }
   };
 
-  const esqueci = () => {
-    setAviso(
-      email.trim()
-        ? { tipo: 'info', texto: `Enviamos um link de recuperação para ${email.trim()}.` }
-        : { tipo: 'erro', texto: 'Digite seu e-mail no campo Login para recuperar a senha.' }
-    );
-  };
+  const esqueci = () =>
+    setAviso({
+      tipo: 'info',
+      texto: 'Peça ao administrador para redefinir sua senha. Ele gera uma senha provisória para você.',
+    });
 
   return (
     <View style={styles.root}>
       <Blobs />
-      <KeyboardAvoidingView style={styles.content} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.logo}>
-          <Logo size={58} />
-        </View>
-        <Text style={styles.welcome}>Bem-vindo!</Text>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={[styles.content, criando && { paddingTop: '10%' }]} keyboardShouldPersistTaps="handled">
+          <View style={[styles.logo, criando && { marginBottom: 20 }]}>
+            <Logo size={criando ? 44 : 58} />
+          </View>
+          <Text style={[styles.welcome, criando && { marginBottom: 24, fontSize: 26 }]}>
+            {criando ? 'Criar conta' : 'Bem-vindo!'}
+          </Text>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Login</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Seunome@gmail.com"
-            placeholderTextColor="#8A90A6"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-          <Text style={[styles.label, { marginTop: 26 }]}>Senha</Text>
-          <TextInput
-            style={styles.input}
-            value={senha}
-            onChangeText={setSenha}
-            placeholder="••••••••"
-            placeholderTextColor="#8A90A6"
-            secureTextEntry
-            onSubmitEditing={entrar}
-          />
-        </View>
+          <View style={styles.form}>
+            {criando && <Field label="Seu nome" value={form.nome} onChangeText={set('nome')} placeholder="Nome e sobrenome" autoComplete="name" style={styles.gap} />}
+            <Field
+              label={criando ? 'E-mail' : 'Login'}
+              value={form.email}
+              onChangeText={set('email')}
+              placeholder="Seunome@gmail.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              style={criando ? styles.gap : undefined}
+            />
+            <Field
+              label="Senha"
+              value={form.senha}
+              onChangeText={set('senha')}
+              placeholder={criando ? 'Mínimo de 6 caracteres' : '••••••••'}
+              secureTextEntry
+              autoComplete={criando ? 'new-password' : 'current-password'}
+              onSubmitEditing={criando ? undefined : enviar}
+              style={styles.gap}
+            />
+            {criando && (
+              <>
+                <Field label="Confirmar senha" value={form.confirma} onChangeText={set('confirma')} placeholder="••••••••" secureTextEntry style={styles.gap} />
+                <Field label="Nome do pet (opcional)" value={form.petNome} onChangeText={set('petNome')} placeholder="Ex.: Mahoraga" style={styles.gap} onSubmitEditing={enviar} />
+              </>
+            )}
+          </View>
 
-        {aviso && (
-          <Text style={[styles.aviso, aviso.tipo === 'erro' && { color: colors.value }]}>{aviso.texto}</Text>
-        )}
+          {aviso && <Text style={[styles.aviso, aviso.tipo === 'erro' && { color: colors.value }]}>{aviso.texto}</Text>}
 
-        <Pressable onPress={entrar} style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}>
-          <Text style={styles.buttonText}>Log in</Text>
-        </Pressable>
-        <Pressable onPress={esqueci} hitSlop={10}>
-          <Text style={styles.forgot}>Forgot Password</Text>
-        </Pressable>
+          <Pressable
+            onPress={enviar}
+            disabled={enviando}
+            style={({ pressed }) => [styles.button, (pressed || enviando) && { opacity: 0.7 }]}
+          >
+            <Text style={styles.buttonText}>{enviando ? 'Aguarde…' : criando ? 'Criar conta' : 'Log in'}</Text>
+          </Pressable>
+
+          {!criando && (
+            <Pressable onPress={esqueci} hitSlop={10}>
+              <Text style={styles.forgot}>Forgot Password</Text>
+            </Pressable>
+          )}
+
+          <Pressable onPress={trocarModo} hitSlop={10} style={styles.switch}>
+            <Text style={styles.switchText}>
+              {criando ? 'Já tem conta? ' : 'Ainda não tem conta? '}
+              <Text style={styles.switchLink}>{criando ? 'Entrar' : 'Criar conta'}</Text>
+            </Text>
+          </Pressable>
+
+          {backend.mode === 'local' && !criando && (
+            <Text style={styles.demo}>
+              Modo demonstração: as contas ficam neste aparelho.{'\n'}Conta de exemplo: {DEMO_ACCOUNT.email} / {DEMO_ACCOUNT.senha}
+            </Text>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -97,7 +155,8 @@ export default function LoginScreen({ onLogin }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.pink },
-  content: { flex: 1, alignItems: 'center', paddingTop: '18%' },
+  content: { flexGrow: 1, alignItems: 'center', paddingTop: '18%', paddingBottom: 40 },
+  gap: { marginTop: 22 },
   logo: { marginBottom: 36 },
   welcome: { fontFamily: fonts.bodyMedium, fontSize: 30, color: colors.navy, marginBottom: 48 },
   form: { width: '64%', maxWidth: 360 },
@@ -131,5 +190,17 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   buttonText: { fontFamily: fonts.body, fontSize: 15, color: '#222' },
+  switch: { marginTop: 22 },
+  switchText: { fontFamily: fonts.body, fontSize: 13, color: colors.navy },
+  switchLink: { fontFamily: fonts.bodyMedium, color: colors.value, textDecorationLine: 'underline' },
+  demo: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.navy,
+    opacity: 0.75,
+    textAlign: 'center',
+    marginTop: 18,
+    paddingHorizontal: 24,
+  },
   forgot: { fontFamily: fonts.body, fontSize: 10, color: colors.navy, marginTop: 12 },
 });

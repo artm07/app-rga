@@ -149,3 +149,23 @@ export function CameraIcon({ size = 20, color = C }) {
     </Svg>
   );
 }
+
+export function ShieldIcon({ size = 22, color = C }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z" fill={color} />
+      <Path d="M8.5 12l2.5 2.5 4.5-5" stroke={colors.white} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function UsersIcon({ size = 22, color = C }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx="9" cy="8" r="3.6" fill={color} />
+      <Path d="M2 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5z" fill={color} />
+      <Circle cx="17" cy="9" r="2.8" fill={color} opacity="0.6" />
+      <Path d="M15.5 13.8c3.6-.4 6.5 1.8 6.5 5.2h-4.5c0-2-.7-3.8-2-5.2z" fill={color} opacity="0.6" />
+    </Svg>
+  );
+}

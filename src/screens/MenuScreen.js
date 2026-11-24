@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Gradient from '../components/Gradient';
 import Mascot from '../components/Mascot';
 import { useStore } from '../store';
-import { PawIcon, ClipboardIcon, AlertIcon, LockIcon, HeartIcon, MenuIcon } from '../components/Icons';
+import { PawIcon, ClipboardIcon, AlertIcon, LockIcon, HeartIcon, MenuIcon, ShieldIcon } from '../components/Icons';
 import { colors, fonts, shadow } from '../theme';
 
 const ITEMS = [
@@ -32,8 +32,8 @@ function MenuCard({ label, Icon, onPress }) {
 export default function MenuScreen({ onOpen, onLogout }) {
   const insets = useSafeAreaInsets();
   const [drawer, setDrawer] = useState(false);
-  const { data } = useStore();
-  const primeiroNome = (data.pet.tutor.nome || '').split(' ')[0];
+  const { user, isAdmin, saveError } = useStore();
+  const primeiroNome = (user?.nome || '').split(' ')[0];
 
   return (
     <View style={styles.root}>
@@ -57,13 +57,15 @@ export default function MenuScreen({ onOpen, onLogout }) {
           <Mascot size={88} />
           <Text style={styles.helpText}>Posso ajudar?</Text>
         </Pressable>
+        {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
       </ScrollView>
 
       {drawer && (
         <Pressable style={styles.overlay} onPress={() => setDrawer(false)}>
           <Pressable style={[styles.drawer, { paddingTop: insets.top + 24 }]} onPress={() => {}}>
             <Text style={styles.drawerTitle}>{primeiroNome ? `Olá, ${primeiroNome}!` : 'Olá!'}</Text>
-            {data.user?.email ? <Text style={styles.drawerEmail}>{data.user.email}</Text> : null}
+            <Text style={styles.drawerEmail}>{user?.email}</Text>
+            {isAdmin && <Text style={styles.adminBadge}>Administrador</Text>}
             <View style={{ height: 18 }} />
             {ITEMS.map((it) => (
               <Pressable
@@ -78,6 +80,18 @@ export default function MenuScreen({ onOpen, onLogout }) {
                 <Text style={styles.drawerText}>{it.label.replace('\n', ' ')}</Text>
               </Pressable>
             ))}
+            {isAdmin && (
+              <Pressable
+                style={[styles.drawerItem, styles.drawerAdmin]}
+                onPress={() => {
+                  setDrawer(false);
+                  onOpen('admin');
+                }}
+              >
+                <ShieldIcon size={22} />
+                <Text style={styles.drawerText}>Administração</Text>
+              </Pressable>
+            )}
             <Pressable style={[styles.drawerItem, { marginTop: 'auto' }]} onPress={onLogout}>
               <Text style={[styles.drawerText, { color: colors.value, marginLeft: 0 }]}>Sair</Text>
             </Pressable>
@@ -133,6 +147,20 @@ const styles = StyleSheet.create({
     borderRightColor: colors.mint,
   },
   drawerTitle: { fontFamily: fonts.titleBold, fontSize: 22, color: colors.navy },
+  saveError: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.value, textAlign: 'center' },
+  adminBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11,
+    color: colors.white,
+    backgroundColor: colors.navy,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  drawerAdmin: { borderTopWidth: 1, borderTopColor: colors.mint, marginTop: 8, paddingTop: 16 },
   drawerEmail: { fontFamily: fonts.body, fontSize: 12, color: colors.navy, opacity: 0.8 },
   drawerItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   drawerText: { fontFamily: fonts.title, fontSize: 18, color: colors.navy, marginLeft: 12 },

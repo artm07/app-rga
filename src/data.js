@@ -1,60 +1,14 @@
-// Dados iniciais (de exemplo, iguais aos do protótipo).
-// Tudo que o usuário edita no app é salvo no aparelho (ver src/store.js).
-// Quando houver uma API/back-end, é aqui e no store que entra a integração.
+// Campos da ficha, máscaras de digitação e utilitários de dados do app.
+// Os dados de cada conta são salvos pelo src/store.js (no servidor ou no aparelho).
 
 export const DEFAULT_PET_PHOTO = require('../assets/pet.jpg');
 
 let seq = 0;
 export const newId = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
-export const initialData = {
-  user: null, // { email } depois do login
-  pet: {
-    registro: '123.456.789-0',
-    foto: null, // null = foto padrão; senão uma URI (data:/file:)
-    nome: 'Mahoraga',
-    especie: 'Gato',
-    sexo: 'Macho',
-    castrado: 'Sim',
-    idade: '6 anos e 7 meses',
-    raca: 'Persa',
-    pelagem: 'Branco',
-    porte: 'Médio',
-    tutor: {
-      nome: 'Arthur Martins',
-      cpf: '123.456.789-00',
-      telefone: '(11) 98765-4321',
-      email: 'arthur@email.com',
-    },
-    local: {
-      endereco: 'Rua das Flores, 123',
-      bairro: 'Centro',
-      cidade: 'São Paulo - SP',
-      cep: '01000-000',
-    },
-    vacinas: [
-      { id: 'v1', nome: 'Antirrábica', data: '12/03/2026', proxima: '12/03/2027' },
-      { id: 'v2', nome: 'V5 (Quíntupla felina)', data: '20/01/2026', proxima: '20/01/2027' },
-      { id: 'v3', nome: 'FeLV', data: '05/08/2025', proxima: '05/08/2026' },
-    ],
-  },
-  consultas: [
-    { id: 'c1', data: '18/11/2026', tipo: 'Check-up anual', local: 'Clínica Vet Amigo', status: 'Realizada' },
-    { id: 'c2', data: '02/12/2026', tipo: 'Retorno - exames', local: 'Clínica Vet Amigo', status: 'Agendada' },
-  ],
-  noticias: [
-    { id: 'n1', titulo: 'Campanha de vacinação antirrábica', texto: 'Postos de vacinação gratuita para cães e gatos neste fim de semana.' },
-    { id: 'n2', titulo: 'Castração gratuita', texto: 'Inscrições abertas para o mutirão de castração do mês de dezembro.' },
-    { id: 'n3', titulo: 'Mantenha o RGA atualizado', texto: 'Mudou de endereço ou telefone? Atualize os dados do tutor no app.' },
-  ],
-  adocao: [
-    { id: 'a1', nome: 'Luna', info: 'Gata · 1 ano · Castrada', interesse: false },
-    { id: 'a2', nome: 'Thor', info: 'Cão · 3 anos · Porte médio', interesse: false },
-    { id: 'a3', nome: 'Mel', info: 'Gata · 4 meses · Filhote', interesse: false },
-  ],
-  codigo: '482 913',
-  chat: [{ id: 'm0', de: 'bot', texto: 'Oi! Eu sou o Miau 🐾 Pode perguntar o que quiser sobre os cuidados com o seu pet.' }],
-};
+// Dados iniciais (conta de exemplo, conta nova e conteúdo compartilhado) ficam em
+// src/backend/defaults.js, que também é usado pelo servidor.
+export { demoUserData, DEMO_ACCOUNT, newUserData, initialGlobal } from './backend/defaults';
 
 // Campos de cada aba da ficha. `path` aponta para dentro de `pet`;
 // `options` vira botões de escolha no modo de edição.

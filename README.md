@@ -9,6 +9,22 @@ App mobile (Android / iOS / Web) do **RGA – Registro Geral Animal**, feito em 
 - **RGA** – foto do pet, abas *RGA / Tutor / Localização / Vacinação* e a ficha (nº do registro, nome, tutor, espécie, sexo, castrado, idade, raça, pelagem, porte).
 - **Consultas, Notícias, Código de acesso, Adoção, Posso ajudar? (chat)** – telas no mesmo tema.
 
+## Contas e administrador
+
+- **Criar conta:** na tela de login, toque em **Criar conta** (nome, e-mail, senha e, se quiser, o nome do pet). Cada conta tem a sua própria ficha, vacinas, consultas e conversa com o assistente.
+- **Administrador:** a **primeira conta criada** vira administradora. No menu ☰ aparece **Administração**, com:
+  - **Resumo:** total de contas, administradores, contas bloqueadas, vacinas vencidas, consultas agendadas e pets por espécie;
+  - **Contas:** busca por nome, e-mail, pet ou nº do RGA; ver a ficha do pet; tornar/remover administrador; bloquear/desbloquear; gerar senha provisória; excluir conta;
+  - **Notícias:** publicar, editar e remover as notícias que todos veem;
+  - **Adoção:** ver quem divulgou cada animal e quem marcou "Quero adotar", e remover anúncios.
+- Ninguém consegue bloquear, excluir ou rebaixar a própria conta, e sempre fica pelo menos um administrador.
+- **Esqueci a senha:** o administrador gera uma senha provisória e repassa ao tutor.
+
+Onde as contas ficam:
+
+- **Com o servidor** (`EXPO_PUBLIC_API_URL` definida): contas reais e centralizadas. Senhas guardadas com hash (scrypt), sessão de 30 dias, limite de tentativas de login. O administrador vê todas as contas.
+- **Sem servidor (modo demonstração, inclusive no link publicado):** as contas ficam no próprio aparelho/navegador, então o administrador só vê as contas criadas ali. Já vem uma conta de exemplo: `arthur@email.com` / `123456` (tutor).
+
 ## O que dá para editar
 
 Tudo fica salvo no aparelho (no navegador, no próprio navegador) e continua lá ao fechar e abrir o app.
@@ -21,7 +37,9 @@ Tudo fica salvo no aparelho (no navegador, no próprio navegador) e continua lá
 - **Posso ajudar?:** chat com IA (Claude) que só responde sobre cuidados com animais e o uso do app — veja abaixo.
 - O login fica lembrado até tocar em **Sair** no menu ☰.
 
-Os dados iniciais são de exemplo e ficam em `src/data.js`; o salvamento fica em `src/store.js`. É ali que entra a integração com uma API quando houver.
+Cada conta salva os próprios dados (no servidor, ou no aparelho no modo demonstração).
+
+Os dados iniciais ficam em `src/backend/defaults.js`; o salvamento fica em `src/store.js` e `src/backend/`.
 
 ## Como rodar
 
@@ -39,21 +57,21 @@ O gato Miau responde com IA, **só sobre cuidados com animais** (saúde, vacinas
 Como a IA é ligada:
 
 1. **Link publicado no claude.ai:** usa o Claude da conta de quem abre o link (na 1ª pergunta aparece um pedido de permissão). Não precisa configurar nada.
-2. **App no celular / site próprio:** precisa do servidor em `server/`, porque a chave da API **nunca** pode ficar dentro do app (qualquer pessoa conseguiria extrair). O servidor guarda a chave e aplica as mesmas regras.
+2. **App no celular / site próprio:** usa o servidor em `server/` (o mesmo das contas), porque a chave da API **nunca** pode ficar dentro do app (qualquer pessoa conseguiria extrair). O servidor guarda a chave, aplica as mesmas regras e só atende quem está logado.
 
 ```bash
 cd server
 npm install
-ANTHROPIC_API_KEY=sk-ant-... npm start      # http://localhost:8787/chat
+ANTHROPIC_API_KEY=sk-ant-... npm start      # http://localhost:8787
 ```
 
 Depois, no app, crie um arquivo `.env` na raiz com o endereço do servidor e rode de novo:
 
 ```bash
-EXPO_PUBLIC_CHAT_API_URL=https://seu-servidor.com/chat
+EXPO_PUBLIC_API_URL=https://seu-servidor.com
 ```
 
-O servidor pode ser hospedado em qualquer serviço de Node 22+ (Render, Railway, Fly.io, um VPS...) apontando o comando de início para `node server/chat-server.mjs` e definindo a variável `ANTHROPIC_API_KEY` no painel do serviço. Use `ALLOWED_ORIGIN` para aceitar só o domínio do seu site. A chave é criada em console.anthropic.com e o uso é cobrado por lá.
+O servidor pode ser hospedado em qualquer serviço de Node 22+ (Render, Railway, Fly.io, um VPS...) com o comando de início `cd server && npm install && npm start` e a variável `ANTHROPIC_API_KEY` no painel do serviço. Opções: `ALLOWED_ORIGIN` (aceitar só o domínio do seu site), `ADMIN_EMAILS` (e-mails que já entram como administradores, separados por vírgula) e `DATA_FILE` (onde fica o arquivo com os dados; use um disco persistente do serviço, senão as contas somem a cada nova publicação). A chave é criada em console.anthropic.com e o uso é cobrado por lá.
 
 Sem nenhum dos dois, o chat continua funcionando em "modo simples" (respostas prontas sobre vacinas, consultas, código e adoção).
 
@@ -73,9 +91,11 @@ Isso gera **`web/index.html`**: um arquivo único, com fontes e imagens embutida
 App.js                  navegação entre as telas + carregamento das fontes
 src/theme.js            cores, fontes e sombra do tema
 src/data.js             dados iniciais e campos de cada aba
-src/store.js            estado do app salvo no aparelho
+src/store.js            sessão de login e dados da conta
+src/backend/            contas: servidor (remote.js) ou aparelho (local.js)
+src/screens/AdminScreen.js  página de administração
 src/ai/                 regras do assistente e conexão com a IA
-server/                 servidor do assistente (guarda a chave da API)
+server/                 servidor: contas, administração e assistente com IA
 src/components/         Logo, ícones (SVG), degradê, cabeçalho
 src/screens/            Login, Menu, RGA e demais telas
 scripts/single-html.js  junta o build web num único web/index.html

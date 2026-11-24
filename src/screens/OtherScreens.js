@@ -128,10 +128,11 @@ export function ConsultasScreen({ onBack }) {
 /* ---------- Notícias ---------- */
 
 export function NoticiasScreen({ onBack }) {
-  const { data } = useStore();
+  const { global } = useStore();
   return (
     <Page id="not" title="Notícias" onBack={onBack}>
-      {data.noticias.map((n) => (
+      {global.noticias.length === 0 && <Text style={styles.empty}>Nenhuma notícia publicada.</Text>}
+      {global.noticias.map((n) => (
         <Card key={n.id} Icon={AlertIcon} title={n.titulo}>
           <Text style={styles.cardText}>{n.texto}</Text>
         </Card>
@@ -160,7 +161,7 @@ export function CodigoScreen({ onBack }) {
 
   return (
     <Page id="cod" title="Código de acesso" onBack={onBack}>
-      <Card Icon={LockIcon} title={`Código do RGA de ${data.pet.nome}`}>
+      <Card Icon={LockIcon} title={data.pet.nome ? `Código do RGA de ${data.pet.nome}` : 'Código do RGA do seu pet'}>
         <Text style={styles.cardText}>
           Passe este código para o veterinário acessar a ficha do seu pet. Gere um novo quando quiser cancelar o anterior.
         </Text>
@@ -177,20 +178,36 @@ export function CodigoScreen({ onBack }) {
 /* ---------- Adoção ---------- */
 
 export function AdocaoScreen({ onBack }) {
-  const { data, update } = useStore();
+  const { data, update, global, setGlobal, session, user, isAdmin, backend } = useStore();
   const [form, setForm] = useState(null);
   const [erro, setErro] = useState('');
-  const set = (fn) => update((d) => ({ ...d, adocao: fn(d.adocao) }));
+  const interesses = data.interesses || [];
 
-  const salvar = () => {
-    if (!form.nome.trim()) {
-      setErro('Informe o nome do animal.');
-      return;
+  const salvar = async () => {
+    if (!form.nome.trim()) return setErro('Informe o nome do animal.');
+    try {
+      setGlobal(await backend.addAdocao(session, { nome: form.nome.trim(), info: form.info.trim() }));
+      setForm(null);
+      setErro('');
+    } catch (e) {
+      setErro(e?.message || 'Não foi possível divulgar.');
     }
-    set((l) => [{ id: newId(), nome: form.nome.trim(), info: form.info.trim(), interesse: false }, ...l]);
-    setForm(null);
-    setErro('');
   };
+
+  const remover = async (id) => {
+    try {
+      setGlobal(await backend.removeAdocao(session, id));
+      setErro('');
+    } catch (e) {
+      setErro(e?.message || 'Não foi possível remover.');
+    }
+  };
+
+  const alternarInteresse = (id) =>
+    update((d) => {
+      const atual = d.interesses || [];
+      return { ...d, interesses: atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id] };
+    });
 
   return (
     <Page id="ado" title="Adoção" onBack={onBack}>
@@ -212,22 +229,28 @@ export function AdocaoScreen({ onBack }) {
       ) : (
         <Button title="Divulgar animal para adoção" variant="light" icon={<PlusIcon />} onPress={() => setForm({ nome: '', info: '' })} />
       )}
+      {!form && erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
-      {data.adocao.map((a) => (
-        <Card
-          key={a.id}
-          Icon={HeartIcon}
-          title={a.nome}
-          right={<RemoveButton label={`Remover ${a.nome}`} onPress={() => set((l) => l.filter((x) => x.id !== a.id))} />}
-        >
-          {a.info ? <Text style={styles.cardText}>{a.info}</Text> : null}
-          <Pressable onPress={() => set((l) => l.map((x) => (x.id === a.id ? { ...x, interesse: !x.interesse } : x)))}>
-            <Text style={[styles.badge, a.interesse ? styles.badgeAgendada : styles.badgeLight]}>
-              {a.interesse ? '♥ Tenho interesse' : '♡ Quero adotar'}
-            </Text>
-          </Pressable>
-        </Card>
-      ))}
+      {global.adocao.length === 0 && <Text style={styles.empty}>Nenhum animal para adoção no momento.</Text>}
+      {global.adocao.map((a) => {
+        const marcado = interesses.includes(a.id);
+        const podeRemover = isAdmin || (a.autor && a.autor === user?.id);
+        return (
+          <Card
+            key={a.id}
+            Icon={HeartIcon}
+            title={a.nome}
+            right={podeRemover ? <RemoveButton label={`Remover ${a.nome}`} onPress={() => remover(a.id)} /> : null}
+          >
+            {a.info ? <Text style={styles.cardText}>{a.info}</Text> : null}
+            <Pressable onPress={() => alternarInteresse(a.id)}>
+              <Text style={[styles.badge, marcado ? styles.badgeAgendada : styles.badgeLight]}>
+                {marcado ? '♥ Tenho interesse' : '♡ Quero adotar'}
+              </Text>
+            </Pressable>
+          </Card>
+        );
+      })}
     </Page>
   );
 }
@@ -256,7 +279,7 @@ const SUGESTOES = ['Meu gato não quer comer, o que faço?', 'De quanto em quant
 
 export function AjudaScreen({ onBack }) {
   const insets = useSafeAreaInsets();
-  const { data, update } = useStore();
+  const { data, update, session } = useStore();
   const [texto, setTexto] = useState('');
   const [pendente, setPendente] = useState(null); // null | '' (pensando) | texto chegando
   const [semIA, setSemIA] = useState(false);
@@ -287,7 +310,7 @@ export function AjudaScreen({ onBack }) {
     ctl.current = new AbortController();
     setPendente('');
     try {
-      const resp = await askAI(historico, data, { signal: ctl.current.signal, onText: setPendente });
+      const resp = await askAI(historico, data, { signal: ctl.current.signal, onText: setPendente, token: session?.token });
       addBot(resp);
     } catch (e) {
       if (e?.code === 'cancelled') {

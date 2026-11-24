@@ -140,7 +140,7 @@ export default function RgaScreen({ onBack }) {
 
   const editing = !!draft;
   const shown = draft || pet;
-  const foto = shown.foto ? { uri: shown.foto } : DEFAULT_PET_PHOTO;
+  const foto = shown.foto === 'demo' ? DEFAULT_PET_PHOTO : shown.foto ? { uri: shown.foto } : null;
 
   const salvar = () => {
     update((d) => ({ ...d, pet: { ...draft, vacinas: d.pet.vacinas } }));
@@ -176,7 +176,14 @@ export default function RgaScreen({ onBack }) {
             )}
           </View>
           <Pressable onPress={trocarFoto} style={styles.photoFrame} accessibilityLabel="Trocar foto do pet">
-            <Image source={foto} style={styles.photo} resizeMode="cover" />
+            {foto ? (
+              <Image source={foto} style={styles.photo} resizeMode="cover" />
+            ) : (
+              <View style={[styles.photo, styles.noPhoto]}>
+                <CameraIcon size={34} />
+                <Text style={styles.noPhotoText}>Toque para adicionar a foto do pet</Text>
+              </View>
+            )}
             <View style={styles.photoBadge}>
               <CameraIcon size={18} />
             </View>
@@ -262,6 +269,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
   },
   photo: { width: 252, height: 172, borderRadius: 8 },
+  noPhoto: { backgroundColor: colors.pinkLight, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  noPhotoText: { fontFamily: fonts.body, fontSize: 12, color: colors.navy },
   photoBadge: {
     position: 'absolute',
     right: -8,

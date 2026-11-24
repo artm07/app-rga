@@ -1,10 +1,10 @@
 // Envia a conversa para a IA. Tenta, nesta ordem:
 // 1) o Claude do próprio claude.ai, quando o app roda como link publicado (capacidade "sample");
-// 2) o servidor do projeto (server/chat-server.mjs), se EXPO_PUBLIC_CHAT_API_URL estiver definida.
+// 2) o servidor do projeto (server/server.mjs), se EXPO_PUBLIC_API_URL estiver definida.
 // Sem nenhum dos dois, rejeita com { code: 'unavailable' }.
 import { RULES, petContext } from './rules';
 
-const API_URL = process.env.EXPO_PUBLIC_CHAT_API_URL;
+import { API_URL } from '../backend/remote';
 const MAX_TURNS = 20; // só as últimas mensagens vão para a IA
 
 let samplePromise;
@@ -21,7 +21,7 @@ export async function isAiAvailable() {
 }
 
 // history: [{ de: 'eu' | 'bot', texto }] — termina na pergunta nova do usuário
-export async function askAI(history, data, { onText, signal } = {}) {
+export async function askAI(history, data, { onText, signal, token } = {}) {
   const turns = history.slice(-MAX_TURNS).map((m) => ({
     role: m.de === 'eu' ? 'user' : 'assistant',
     content: m.texto,
@@ -45,9 +45,9 @@ export async function askAI(history, data, { onText, signal } = {}) {
   if (API_URL) {
     let res;
     try {
-      res = await fetch(API_URL, {
+      res = await fetch(`${API_URL}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
         body: JSON.stringify({ messages: turns, context: petContext(data) }),
         signal,
       });
@@ -76,6 +76,8 @@ export function errorMessage(code) {
       return 'Sua sessão expirou. Entre de novo no claude.ai e tente outra vez.';
     case 'network':
       return 'Não consegui me conectar. Verifique a internet e tente de novo.';
+    case 'unauthorized':
+      return 'Sua sessão expirou. Saia e entre de novo para usar o assistente.';
     case 'unavailable':
       return 'A IA ainda não está ligada nesta versão do app. (Veja "Assistente com IA" no README.)';
     default:
