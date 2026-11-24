@@ -18,7 +18,12 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "RGA",
+      "shortName": "RGA",
+      "lang": "pt-BR",
+      "themeColor": "#7EF0C6",
+      "backgroundColor": "#F9D4DA"
     },
     "plugins": [
       "expo-font"

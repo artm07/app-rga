@@ -7,7 +7,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Logo from '../components/Logo';
@@ -28,19 +27,24 @@ function Blobs() {
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  // Aviso mostrado na própria tela: { tipo: 'erro' | 'info', texto }
+  const [aviso, setAviso] = useState(null);
 
   const entrar = () => {
     if (!email.trim() || !senha) {
-      const msg = 'Preencha o login e a senha.';
-      Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Atenção', msg);
+      setAviso({ tipo: 'erro', texto: 'Preencha o login e a senha.' });
       return;
     }
+    setAviso(null);
     onLogin();
   };
 
   const esqueci = () => {
-    const msg = 'Enviaremos um link de recuperação para o seu e-mail.';
-    Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Recuperar senha', msg);
+    setAviso(
+      email.trim()
+        ? { tipo: 'info', texto: `Enviamos um link de recuperação para ${email.trim()}.` }
+        : { tipo: 'erro', texto: 'Digite seu e-mail no campo Login para recuperar a senha.' }
+    );
   };
 
   return (
@@ -76,6 +80,10 @@ export default function LoginScreen({ onLogin }) {
           />
         </View>
 
+        {aviso && (
+          <Text style={[styles.aviso, aviso.tipo === 'erro' && { color: colors.value }]}>{aviso.texto}</Text>
+        )}
+
         <Pressable onPress={entrar} style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}>
           <Text style={styles.buttonText}>Log in</Text>
         </Pressable>
@@ -102,6 +110,15 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.line,
     paddingVertical: 4,
     outlineStyle: 'none',
+  },
+  aviso: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.navy,
+    textAlign: 'center',
+    marginTop: 18,
+    marginBottom: -26,
+    width: '70%',
   },
   button: {
     marginTop: 44,
