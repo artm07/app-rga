@@ -185,12 +185,18 @@ export default function RgaScreen({ onBack }) {
         </View>
 
         <View style={styles.tabs}>
-          {TABS.map((t) => {
+          {TABS.map((t, i) => {
             const active = t === tab;
             const locked = editing && t === 'Vacinação';
+            // Fundo inclinado fica dentro da própria aba; na primeira/última ele encosta na borda da tela
+            const bgEdges = { left: i === 0 ? -20 : 6, right: i === TABS.length - 1 ? -20 : 6 };
             return (
-              <Pressable key={t} onPress={() => !locked && setTab(t)} style={[styles.tab, locked && { opacity: 0.4 }]}>
-                {active && <View style={styles.tabActiveBg} />}
+              <Pressable
+                key={t}
+                onPress={() => !locked && setTab(t)}
+                style={[styles.tab, { flex: t.length + 5 }, locked && { opacity: 0.4 }]}
+              >
+                {active && <View style={[styles.tabActiveBg, bgEdges]} />}
                 <Text style={[styles.tabText, active && styles.tabTextActive]}>{t}</Text>
               </Pressable>
             );
@@ -269,16 +275,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.white,
   },
-  tabs: { flexDirection: 'row', backgroundColor: colors.mint, height: 30, alignItems: 'stretch' },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabs: { flexDirection: 'row', backgroundColor: colors.mint, height: 30, alignItems: 'stretch', overflow: 'hidden' },
+  tab: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
   tabActiveBg: {
-    ...StyleSheet.absoluteFillObject,
-    left: -12,
-    right: 4,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     backgroundColor: colors.mintDark,
-    transform: [{ skewX: '-30deg' }],
+    transform: [{ skewX: '-20deg' }],
   },
-  tabText: { fontFamily: fonts.bodyItalic, fontSize: 13, color: colors.navy },
+  tabText: { fontFamily: fonts.bodyItalic, fontSize: 13, color: colors.navy, textAlign: 'center' },
   tabTextActive: { fontFamily: fonts.bodyBoldItalic },
   registro: { paddingHorizontal: 24, paddingTop: 12 },
   registroLabel: { fontFamily: fonts.body, fontSize: 15, color: colors.navy },
