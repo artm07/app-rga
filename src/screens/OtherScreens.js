@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -9,6 +9,7 @@ import { ClipboardIcon, AlertIcon, LockIcon, HeartIcon, PlusIcon, TrashIcon } fr
 import { Input, Choice, Button } from '../components/ui';
 import { useStore } from '../store';
 import { newId } from '../data';
+import { askAI, errorMessage, isAiAvailable } from '../ai/chat';
 import { colors, fonts, shadow } from '../theme';
 
 function Page({ title, onBack, children, id }) {
@@ -231,9 +232,10 @@ export function AdocaoScreen({ onBack }) {
   );
 }
 
-/* ---------- Posso ajudar? (chat) ---------- */
+/* ---------- Posso ajudar? (chat com IA) ---------- */
 
-function resposta(texto, data) {
+// Respostas simples usadas só quando a IA não está ligada nesta versão do app
+function respostaOffline(texto, data) {
   const t = texto.toLowerCase();
   if (t.includes('vacina')) {
     const v = data.pet.vacinas[data.pet.vacinas.length - 1];
@@ -247,35 +249,83 @@ function resposta(texto, data) {
   }
   if (t.includes('código') || t.includes('codigo')) return `O código de acesso atual é ${data.codigo}.`;
   if (t.includes('adot')) return 'Veja os animais disponíveis na tela Adoção e toque em "Quero adotar".';
-  if (t.includes('editar') || t.includes('mudar') || t.includes('alterar'))
-    return 'Na tela RGA, toque em "Editar" no canto superior direito. Para trocar a foto, toque nela.';
-  return 'Recebi sua mensagem! Em breve um atendente vai responder por aqui.';
+  return 'No momento só consigo responder sobre vacinas, consultas, código de acesso e adoção.';
 }
+
+const SUGESTOES = ['Meu gato não quer comer, o que faço?', 'De quanto em quanto tempo vermifugar?', 'Como escovar os dentes do pet?'];
 
 export function AjudaScreen({ onBack }) {
   const insets = useSafeAreaInsets();
   const { data, update } = useStore();
   const [texto, setTexto] = useState('');
+  const [pendente, setPendente] = useState(null); // null | '' (pensando) | texto chegando
+  const [semIA, setSemIA] = useState(false);
   const scroll = useRef(null);
+  const ctl = useRef(null);
 
-  const enviar = () => {
-    const t = texto.trim();
-    if (!t) return;
-    update((d) => ({
-      ...d,
-      chat: [...d.chat, { id: newId(), de: 'eu', texto: t }, { id: newId(), de: 'bot', texto: resposta(t, d) }],
-    }));
+  useEffect(() => {
+    isAiAvailable().then((ok) => setSemIA(!ok));
+    return () => ctl.current?.abort();
+  }, []);
+
+  const addBot = (texto, erro) =>
+    update((d) => ({ ...d, chat: [...d.chat, { id: newId(), de: 'bot', texto, ...(erro && { erro: true }) }] }));
+
+  const enviar = async (mensagem = texto) => {
+    const t = mensagem.trim();
+    if (!t || pendente !== null) return;
+    const pergunta = { id: newId(), de: 'eu', texto: t };
+    update((d) => ({ ...d, chat: [...d.chat, pergunta] }));
     setTexto('');
+
+    if (semIA) {
+      addBot(respostaOffline(t, data));
+      return;
+    }
+
+    const historico = [...data.chat.filter((m) => !m.erro), pergunta];
+    ctl.current = new AbortController();
+    setPendente('');
+    try {
+      const resp = await askAI(historico, data, { signal: ctl.current.signal, onText: setPendente });
+      addBot(resp);
+    } catch (e) {
+      if (e?.code === 'cancelled') {
+        if (e.text) addBot(`${e.text} …`);
+      } else if (e?.code === 'unavailable') {
+        setSemIA(true);
+        addBot(respostaOffline(t, data));
+      } else {
+        addBot(errorMessage(e?.code), true);
+      }
+    } finally {
+      setPendente(null);
+      ctl.current = null;
+    }
+  };
+
+  const limpar = () => {
+    ctl.current?.abort();
+    update((d) => ({ ...d, chat: [{ id: newId(), de: 'bot', texto: `Oi! Eu sou o Miau 🐾 Pode perguntar o que quiser sobre os cuidados com ${d.pet.nome} ou outro bichinho.` }] }));
   };
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Gradient id="aju" from={colors.pink} to={colors.white} />
       <Header title="Posso ajudar?" onBack={onBack} />
+      <View style={styles.chatBar}>
+        <Text style={styles.chatInfo}>
+          {semIA ? 'Modo simples (IA desligada nesta versão)' : 'Assistente com IA · só assuntos sobre pets'}
+        </Text>
+        <Pressable onPress={limpar} hitSlop={8}>
+          <Text style={styles.clear}>Limpar conversa</Text>
+        </Pressable>
+      </View>
       <ScrollView
         ref={scroll}
         contentContainerStyle={styles.content}
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
+        keyboardShouldPersistTaps="handled"
       >
         {data.chat.map((m) => (
           <View key={m.id} style={[styles.msgRow, m.de === 'eu' && { justifyContent: 'flex-end' }]}>
@@ -284,23 +334,56 @@ export function AjudaScreen({ onBack }) {
                 <Mascot size={36} animate={false} />
               </View>
             )}
-            <Text style={[styles.bubble, m.de === 'eu' ? styles.bubbleMe : styles.bubbleBot]}>{m.texto}</Text>
+            <Text
+              selectable
+              style={[styles.bubble, m.de === 'eu' ? styles.bubbleMe : styles.bubbleBot, m.erro && styles.bubbleErro]}
+            >
+              {m.texto}
+            </Text>
           </View>
         ))}
+
+        {pendente !== null && (
+          <View style={styles.msgRow}>
+            <View style={styles.avatar}>
+              <Mascot size={36} />
+            </View>
+            <Text style={[styles.bubble, styles.bubbleBot, !pendente && styles.thinking]}>
+              {pendente || 'Pensando…'}
+            </Text>
+          </View>
+        )}
+
+        {data.chat.length <= 1 && pendente === null && !semIA && (
+          <View style={styles.sugestoes}>
+            {SUGESTOES.map((s) => (
+              <Pressable key={s} style={styles.sugestao} onPress={() => enviar(s)}>
+                <Text style={styles.sugestaoText}>{s}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </ScrollView>
       <View style={[styles.inputRow, { paddingBottom: insets.bottom + 10 }]}>
         <TextInput
           style={styles.input}
           value={texto}
           onChangeText={setTexto}
-          placeholder="Digite sua mensagem..."
+          placeholder="Pergunte sobre o seu pet..."
           placeholderTextColor="#8A90A6"
-          onSubmitEditing={enviar}
+          onSubmitEditing={() => enviar()}
           returnKeyType="send"
+          maxLength={2000}
         />
-        <Pressable style={styles.send} onPress={enviar}>
-          <Text style={styles.sendText}>Enviar</Text>
-        </Pressable>
+        {pendente !== null ? (
+          <Pressable style={[styles.send, styles.stop]} onPress={() => ctl.current?.abort()}>
+            <Text style={[styles.sendText, { color: colors.white }]}>Parar</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.send} onPress={() => enviar()}>
+            <Text style={styles.sendText}>Enviar</Text>
+          </Pressable>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -378,6 +461,29 @@ const styles = StyleSheet.create({
   },
   bubbleBot: { backgroundColor: colors.mint, borderBottomLeftRadius: 4 },
   bubbleMe: { backgroundColor: colors.white, borderBottomRightRadius: 4, ...shadow, shadowOpacity: 0.15 },
+  bubbleErro: { backgroundColor: colors.pinkLight, color: colors.value, borderWidth: 1, borderColor: colors.value },
+  thinking: { fontFamily: fonts.bodyItalic, opacity: 0.75 },
+  chatBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+    gap: 8,
+  },
+  chatInfo: { fontFamily: fonts.body, fontSize: 11, color: colors.navy, opacity: 0.8, flexShrink: 1 },
+  clear: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.value },
+  sugestoes: { gap: 8, alignItems: 'flex-end' },
+  sugestao: {
+    borderWidth: 1.5,
+    borderColor: colors.mint,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  sugestaoText: { fontFamily: fonts.body, fontSize: 13, color: colors.navy },
+  stop: { backgroundColor: colors.value },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -388,6 +494,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0,
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.navy,

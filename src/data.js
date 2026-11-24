@@ -53,7 +53,7 @@ export const initialData = {
     { id: 'a3', nome: 'Mel', info: 'Gata · 4 meses · Filhote', interesse: false },
   ],
   codigo: '482 913',
-  chat: [{ id: 'm0', de: 'bot', texto: 'Oi! Eu sou o assistente do RGA. Como posso ajudar?' }],
+  chat: [{ id: 'm0', de: 'bot', texto: 'Oi! Eu sou o Miau 🐾 Pode perguntar o que quiser sobre os cuidados com o seu pet.' }],
 };
 
 // Campos de cada aba da ficha. `path` aponta para dentro de `pet`;
